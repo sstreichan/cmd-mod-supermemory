@@ -4,8 +4,8 @@ A [Command Code](https://commandcode.ai/docs/mods) mod that gives your agent per
 backed by [Supermemory](https://supermemory.ai) — project knowledge that survives sessions, plus
 personal preferences scoped to the repository you are in.
 
-**Tested against** Command Code 0.1.37 / `@commandcode/harness` 0.1.0. The ModApi is documented as
-*experimental* — pin the version you ship against.
+**Tested against** Command Code CLI 1.62.0 (desktop app 0.1.37) / `@commandcode/harness` 0.1.0.
+The ModApi is documented as *experimental* — pin the version you ship against.
 
 ## What it does
 
