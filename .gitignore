@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Local mod config / secrets (the real config lives in ~/.commandcode)
+supermemory.jsonc
+supermemory.json
+.env
+.env.*
+
+# Local install state written by `cmd mods add ./`
+.commandcode/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,43 @@
+{
+	// Supermemory API key. Prefer the SUPERMEMORY_API_KEY env var over putting it here.
+	"apiKey": "sm_...",
+
+	// API base URL.
+	"baseUrl": "https://api.supermemory.ai",
+
+	// Minimum similarity for memory retrieval, 0-1.
+	"similarityThreshold": 0.55,
+
+	// Max memories injected per request (also the default `search`/list limit).
+	"maxMemories": 5,
+
+	// Max project memories injected into the first-message context.
+	"maxProjectMemories": 10,
+
+	// Max profile facts injected per section.
+	"maxProfileItems": 5,
+
+	// Include the Supermemory user profile in the injected context.
+	"injectProfile": true,
+
+	// Save the conversation automatically at run end.
+	"autoIngest": true,
+
+	// Append the per-turn recall directive to the system prompt.
+	"autoRecall": true,
+
+	// Save the conversation every N messages (0 = one batch at session end).
+	"captureEveryNTurns": 3,
+
+	// Context usage ratio that triggers the compaction injection, 0-1.
+	"compactionThreshold": 0.8,
+
+	// Extra regex patterns that trigger the "remember this" nudge.
+	// These are ADDED to the built-in defaults - they never replace them.
+	"keywordPatterns": [],
+
+	// Extra container tags to read in ADDITION to the auto-derived
+	// `repo_<name>__<hash>` tag. Useful when you already organise memories by tag.
+	// "projectContainerTag": "",
+	// "userContainerTag": ""
+}

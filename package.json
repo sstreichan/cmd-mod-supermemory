@@ -1,0 +1,37 @@
+{
+	"name": "cmd-mod-supermemory",
+	"version": "0.1.0",
+	"description": "Command Code mod: persistent project + personal memory backed by Supermemory",
+	"type": "module",
+	"license": "MIT",
+	"private": true,
+	"engines": {
+		"node": ">=20"
+	},
+	"keywords": [
+		"commandcode",
+		"mod",
+		"memory",
+		"supermemory",
+		"agent-memory"
+	],
+	"files": [
+		"supermemory.ts",
+		"types",
+		"README.md",
+		"LICENSE",
+		"supermemory.jsonc.example"
+	],
+	"commandcode": {
+		"mods": [
+			"./supermemory.ts"
+		]
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@types/node": "^24.2.0",
+		"typescript": "^5.9.2"
+	}
+}
