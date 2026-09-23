@@ -32,6 +32,10 @@
 	// Context usage ratio that triggers the compaction injection, 0-1.
 	"compactionThreshold": 0.8,
 
+	// Context window of your model in tokens. The mod cannot read this from the ModApi,
+	// so set it to match the model you run (default 200000).
+	"contextLimit": 200000,
+
 	// Extra regex patterns that trigger the "remember this" nudge.
 	// These are ADDED to the built-in defaults - they never replace them.
 	"keywordPatterns": [],

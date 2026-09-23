@@ -2,7 +2,7 @@ import type {ModApi} from '@commandcode/harness';
 import {createHash} from 'node:crypto';
 import {existsSync, readFileSync} from 'node:fs';
 import {homedir} from 'node:os';
-import {basename, dirname, join, resolve} from 'node:path';
+import {basename, join, resolve} from 'node:path';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -99,6 +99,7 @@ interface SmConfig {
 	autoRecall: boolean;
 	captureEveryNTurns: number;
 	compactionThreshold: number;
+	contextLimit: number;
 	keywordPatterns: string[];
 	projectContainerTag?: string;
 	userContainerTag?: string;
@@ -196,6 +197,7 @@ function resolveConfig(cmd: ModApi): SmConfig {
 		autoRecall: bool('auto-recall', true, 'autoRecall', 'autoRecallEveryPrompt'),
 		captureEveryNTurns: num('capture-every-n-turns', 3, 'captureEveryNTurns'),
 		compactionThreshold: num('compaction-threshold', 0.8, 'compactionThreshold'),
+		contextLimit: num('context-limit', DEFAULT_CONTEXT_LIMIT, 'contextLimit'),
 		keywordPatterns: patterns,
 		projectContainerTag:
 			typeof fileConfig.projectContainerTag === 'string'
@@ -449,6 +451,10 @@ export default async function (cmd: ModApi): Promise<void> {
 	cmd.addFlag('compaction-threshold', {
 		type: 'string',
 		description: 'Context usage ratio that triggers compaction (0-1, default 0.8)',
+	});
+	cmd.addFlag('context-limit', {
+		type: 'string',
+		description: "Your model's context window in tokens (default 200000)",
 	});
 
 	// ─── Unified Tool ─────────────────────────────────────────────────────
@@ -886,9 +892,13 @@ export default async function (cmd: ModApi): Promise<void> {
 			// message-count estimate only when the provider reported nothing.
 			const reportedTokens = typeof usage?.inputTokens === 'number' ? usage.inputTokens : 0;
 			const estimatedTokens = reportedTokens > 0 ? reportedTokens : (state.messages?.length ?? 0) * 2000;
-			const usageRatio = estimatedTokens / DEFAULT_CONTEXT_LIMIT;
+			const usageRatio = estimatedTokens / cfg.contextLimit;
 
-			if (estimatedTokens < MIN_TOKENS_FOR_COMPACTION || usageRatio < cfg.compactionThreshold) {
+			// The floor exists to skip trivially small sessions; it must never exceed the ratio
+			// gate, or a small configured contextLimit would make the trigger unreachable.
+			const minTokens = Math.min(MIN_TOKENS_FOR_COMPACTION, cfg.contextLimit * cfg.compactionThreshold);
+
+			if (estimatedTokens < minTokens || usageRatio < cfg.compactionThreshold) {
 				return state;
 			}
 

@@ -67,12 +67,18 @@ Everything else lives in `~/.commandcode/supermemory.jsonc` — see
 | `autoRecall` | `true` | Append the recall directive each turn |
 | `captureEveryNTurns` | `3` | Save every N messages (`0` = one batch at session end) |
 | `compactionThreshold` | `0.8` | Context ratio that triggers the compaction injection |
+| `contextLimit` | `200000` | Your model's context window in tokens — the denominator for that ratio |
 | `keywordPatterns` | `[]` | Extra regexes that trigger the "remember this" nudge (added to the defaults) |
 | `projectContainerTag` / `userContainerTag` | – | Extra container tags to read on top of the derived one |
 
 The numeric and boolean keys are also settable per launch as flags, e.g.
 `cmd --mod-option api-key=sm_... --mod-option max-memories=8`. `supermemory.jsonc` may contain
 `//` and `/* */` comments.
+
+`contextLimit` has to be set by hand. The ModApi exposes no model-window accessor, and the mod
+deliberately does not import one from `@commandcode/harness`: a drop-in mod cannot resolve that
+package at runtime, so such an import would break loading entirely. Set it to the window of the
+model you run, or the compaction gate measures the wrong fraction of it.
 
 ## Usage
 
