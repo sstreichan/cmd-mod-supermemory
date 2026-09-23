@@ -1,6 +1,5 @@
 import type {ModApi} from '@commandcode/harness';
 import {createHash} from 'node:crypto';
-import {execSync} from 'node:child_process';
 import {existsSync, readFileSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {basename, dirname, join, resolve} from 'node:path';
@@ -286,25 +285,27 @@ function normalizeGitRemote(remoteUrl: string): string | null {
 		.toLowerCase();
 }
 
-function getGitRoot(directory: string): string | null {
+async function getGitRoot(cmd: ModApi, directory: string): Promise<string | null> {
 	try {
-		return execSync('git rev-parse --show-toplevel', {
+		const {stdout, code} = await cmd.exec({
+			command: 'git',
+			args: ['rev-parse', '--show-toplevel'],
 			cwd: directory,
-			encoding: 'utf-8',
-			stdio: ['pipe', 'pipe', 'pipe'],
-		}).trim();
+		});
+		return code === 0 && stdout.trim() ? stdout.trim() : null;
 	} catch {
 		return null;
 	}
 }
 
-function getGitRemote(directory: string): string | null {
+async function getGitRemote(cmd: ModApi, directory: string): Promise<string | null> {
 	try {
-		return execSync('git remote get-url origin', {
+		const {stdout, code} = await cmd.exec({
+			command: 'git',
+			args: ['remote', 'get-url', 'origin'],
 			cwd: directory,
-			encoding: 'utf-8',
-			stdio: ['pipe', 'pipe', 'pipe'],
-		}).trim();
+		});
+		return code === 0 && stdout.trim() ? stdout.trim() : null;
 	} catch {
 		return null;
 	}
@@ -329,9 +330,9 @@ interface ResolvedTags {
 	allReads: string[];
 }
 
-function resolveTags(directory: string, config: SmConfig): ResolvedTags {
-	const basePath = getGitRoot(directory) || resolve(directory);
-	const remote = getGitRemote(basePath);
+async function resolveTags(cmd: ModApi, directory: string, config: SmConfig): Promise<ResolvedTags> {
+	const basePath = (await getGitRoot(cmd, directory)) || resolve(directory);
+	const remote = await getGitRemote(cmd, basePath);
 	const normalizedRemote = remote ? normalizeGitRemote(remote) : null;
 	const repoName = remote
 		? remote.replace(/\/+$/, '').replace(/\.git$/i, '').split(/[/]/).pop() || 'unknown'
@@ -390,9 +391,9 @@ function formatSearchResults(
 
 // ─── Main Mod ────────────────────────────────────────────────────────────────
 
-export default function (cmd: ModApi): void {
+export default async function (cmd: ModApi): Promise<void> {
 	const config = resolveConfig(cmd);
-	const tags = resolveTags(cmd.cwd, config);
+	const tags = await resolveTags(cmd, cmd.cwd, config);
 
 	if (!config.apiKey) {
 		cmd.ui.notify(
@@ -873,16 +874,18 @@ export default function (cmd: ModApi): void {
 	let compactionInProgress = false;
 
 	cmd.hooks({
-		onTurnEnd: async ({state}, ctx) => {
+		onTurnEnd: async ({state, usage}, ctx) => {
 			const cfg = resolveConfig(cmd);
 			if (!cfg.apiKey || compactionInProgress) return state;
 
 			const now = Date.now();
 			if (now - lastCompactionTime < COMPACTION_COOLDOWN_MS) return state;
 
-			// Estimate context usage from message count (rough heuristic)
-			const msgCount = state.messages?.length ?? 0;
-			const estimatedTokens = msgCount * 2000;
+			// usage.inputTokens is this turn's whole prompt (cache reads are included in it as
+			// inputTokenDetails, so never add them) - the real context size. Fall back to a
+			// message-count estimate only when the provider reported nothing.
+			const reportedTokens = typeof usage?.inputTokens === 'number' ? usage.inputTokens : 0;
+			const estimatedTokens = reportedTokens > 0 ? reportedTokens : (state.messages?.length ?? 0) * 2000;
 			const usageRatio = estimatedTokens / DEFAULT_CONTEXT_LIMIT;
 
 			if (estimatedTokens < MIN_TOKENS_FOR_COMPACTION || usageRatio < cfg.compactionThreshold) {
@@ -906,6 +909,8 @@ export default function (cmd: ModApi): void {
 				const projMemories = ((listResult as any).memories ?? [])
 					.map((m: any) => m.content ?? m.summary ?? m.title ?? '')
 					.filter(Boolean);
+
+				if (!projMemories.length) return state;
 
 				const compactionMsg = [
 					'[SUPERMEMORY COMPACTION]',
