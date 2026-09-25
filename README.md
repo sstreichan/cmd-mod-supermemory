@@ -26,20 +26,13 @@ supermemory: no API key — set SUPERMEMORY_API_KEY or --mod-option api-key=sm_.
 ## Install
 
 ```bash
-# 1. drop-in file
-cp supermemory.ts ~/.commandcode/mods/
-
-# 2. local directory, referenced in place (user scope)
-cmd mods add -g ./
-
-# 3. from git
-cmd mods add owner/repo
+cmd mods add sstreichan/cmd-mod-supermemory
 ```
 
-The package manifest declares the mod file explicitly:
+Or instruct an agent with this prompt:
 
-```json
-{"commandcode": {"mods": ["./supermemory.ts"]}}
+```text
+Read the README.md of the Command Code mod supermemory (https://github.com/sstreichan/cmd-mod-supermemory) and perform the installation described there. Verify afterwards with `cmd mods list` that `supermemory` is listed.
 ```
 
 ## Configure
