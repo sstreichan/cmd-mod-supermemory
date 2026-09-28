@@ -234,9 +234,13 @@ async function smFetch(
 		});
 		if (!res.ok) {
 			const text = await res.text().catch(() => '');
-			throw new Error(`SuperMemory API ${res.status}: ${text}`);
+			const err: any = new Error(`SuperMemory API ${res.status}: ${text}`);
+			err.status = res.status;
+			throw err;
 		}
-		return res.json();
+		// 204 No Content (e.g. DELETE) has an empty body — JSON.parse would throw
+		const text = await res.text();
+		return text ? JSON.parse(text) : null;
 	} finally {
 		clearTimeout(timer);
 	}
@@ -664,6 +668,7 @@ export default async function (cmd: ModApi): Promise<void> {
 						if (!input.memory_id) return {ok: false, error: 'memory_id is required for forget mode'};
 						const id = input.memory_id as string;
 						// v4 forget requires the memory's containerTag — try each tag in scope
+						let lastError: any = null;
 						for (const ct of readTags) {
 							try {
 								await smFetch(cfg.baseUrl, cfg.apiKey, '/v4/memories', 'DELETE', {
@@ -674,8 +679,11 @@ export default async function (cmd: ModApi): Promise<void> {
 									ok: true,
 									content: [{type: 'text', text: JSON.stringify({success: true, message: `Memory ${id} removed`}, null, 2)}],
 								};
-							} catch {
-								// try next tag
+							} catch (e: any) {
+								lastError = e;
+								// The document is known to this tag — retrying other tags and the
+								// v3 fallback cannot help, so report the real reason instead.
+								if (e?.status === 409) return {ok: false, error: e.message};
 							}
 						}
 						// Fallback: delete the source document directly
@@ -686,7 +694,7 @@ export default async function (cmd: ModApi): Promise<void> {
 								content: [{type: 'text', text: JSON.stringify({success: true, message: `Document ${id} deleted`}, null, 2)}],
 							};
 						} catch (e: any) {
-							return {ok: false, error: e.message};
+							return {ok: false, error: lastError?.message || e.message};
 						}
 					}
 
