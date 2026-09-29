@@ -26,14 +26,68 @@ supermemory: no API key — set SUPERMEMORY_API_KEY or --mod-option api-key=sm_.
 ## Install
 
 ```bash
-cmd mods add sstreichan/cmd-mod-supermemory
+cmdc mods add sstreichan/cmd-mod-supermemory --global
 ```
+
+`--global` installs for all projects (user scope). Without it the mod is installed project-scoped to
+the current directory.
 
 Or instruct an agent with this prompt:
 
 ```text
-Read the README.md of the Command Code mod supermemory (https://github.com/sstreichan/cmd-mod-supermemory) and perform the installation described there. Verify afterwards with `cmd mods list` that `supermemory` is listed.
+Read the README.md of the Command Code mod supermemory (https://github.com/sstreichan/cmd-mod-supermemory) and perform the installation described there. Verify afterwards with `cmdc mods list` that `supermemory` is listed.
 ```
+
+### Verify the install
+
+```bash
+cmdc mods list
+```
+
+`supermemory` must appear under **Package sources** with no warning:
+
+```
+Mods (1)
+  supermemory · user · ~/.commandcode/mods/.registry/git/github.com/sstreichan/cmd-mod-supermemory/supermemory.ts
+
+Package sources (1)
+  git:github.com/sstreichan/cmd-mod-supermemory · installed
+```
+
+Then start a session and ask the agent to store something:
+
+```text
+Remember that this repo uses pnpm, not npm.
+```
+
+The agent calls the `supermemory` tool with `mode: "add"` and reports a memory id. Confirm it landed:
+
+```text
+/memory list
+```
+
+A returned memory means the mod loaded, reached the API and authenticated. `/memory help` lists the
+available commands; `cmdc mods list` only proves registration, not that the API key works.
+
+### Existing local install
+
+A hand-copied `~/.commandcode/mods/supermemory.ts` shadows the git install — both register the mod
+name `supermemory`, and `cmdc mods list` reports the collision:
+
+```
+git:github.com/sstreichan/cmd-mod-supermemory · installed, but provides no mods
+⚠ duplicate mod name "supermemory" — first one wins
+```
+
+The copy keeps loading, so the mod appears to work while never receiving updates. Delete the loose
+file once the git source is registered:
+
+```bash
+rm ~/.commandcode/mods/supermemory.ts
+```
+
+`cmdc mods list` must then show `supermemory` under **Package sources** with no warning. From here on,
+`cmdc mods update` pulls new releases.
 
 ## Configure
 
@@ -65,7 +119,7 @@ Everything else lives in `~/.commandcode/supermemory.jsonc` — see
 | `projectContainerTag` / `userContainerTag` | – | Extra container tags to read on top of the derived one |
 
 The numeric and boolean keys are also settable per launch as flags, e.g.
-`cmd --mod-option api-key=sm_... --mod-option max-memories=8`. `supermemory.jsonc` may contain
+`cmdc --mod-option api-key=sm_... --mod-option max-memories=8`. `supermemory.jsonc` may contain
 `//` and `/* */` comments.
 
 `contextLimit` has to be set by hand. The ModApi exposes no model-window accessor, and the mod
@@ -125,11 +179,14 @@ Try it without installing:
 
 ```bash
 cp ~/.commandcode/supermemory.jsonc.example ~/.commandcode/  # optional
-cmd --mod ./supermemory.ts
+cmdc --mod ./supermemory.ts
 ```
 
 Then `/reload` after editing — mods load once per process. Verify registration with
-`cmd mods list`; it must list `supermemory` with no load warning.
+`cmdc mods list`; it must list `supermemory` with no load warning.
+
+If you also have the git source registered, the local `--mod` copy is redundant — pick one, or the
+duplicate-name warning above applies.
 
 ### About `types/commandcode-harness.d.ts`
 
