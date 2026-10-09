@@ -403,8 +403,12 @@ export default async function (cmd: ModApi): Promise<void> {
 
 	if (!config.apiKey) {
 		cmd.ui.notify(
-			'supermemory: no API key — set SUPERMEMORY_API_KEY or --mod-option api-key=sm_...',
+			'Supermemory: Kein API-Key gesetzt — SUPERMEMORY_API_KEY oder --mod-option api-key=sm_... setzen',
+			'warning',
 		);
+	} else {
+		const tagInfo = tags.canonical ? ` (${tags.canonical})` : '';
+		cmd.ui.notify(`Supermemory aktiv${tagInfo}`);
 	}
 
 	// --- Flags ---
@@ -561,6 +565,7 @@ export default async function (cmd: ModApi): Promise<void> {
 							entityContext: AGENT_ENTITY_CONTEXT,
 						};
 						const data = await smFetch(cfg.baseUrl, cfg.apiKey, '/v3/documents', 'POST', body);
+						cmd.ui.notify(`Supermemory: Gespeichert (${scope})`, 'notice');
 						return {
 							ok: true,
 							content: [{type: 'text', text: JSON.stringify({success: true, message: `Memory added to ${scope} scope`, id: data.id, scope, type: input.type}, null, 2)}],
@@ -585,6 +590,7 @@ export default async function (cmd: ModApi): Promise<void> {
 						const responses = await Promise.all(readTags.map(searchOne));
 						const merged = responses.flatMap((r: any) => r.results ?? []).sort((a: any, b: any) => (b.similarity ?? 0) - (a.similarity ?? 0)).slice(0, limit);
 						const {lines, count} = formatSearchResults({results: merged}, limit);
+						cmd.ui.notify(count > 0 ? `Supermemory: ${count} Treffer gefunden` : `Supermemory: Keine Treffer`, 'notice');
 						return {
 							ok: true,
 							content: [{type: 'text', text: JSON.stringify({success: true, query: input.query, scope, count, results: lines}, null, 2)}],
@@ -624,6 +630,9 @@ export default async function (cmd: ModApi): Promise<void> {
 							for (const d of dynamicArr) lines.push(`- ${d}`);
 						}
 						if (!lines.length) lines.push('No profile data yet.');
+						const staticCount = staticFacts.size;
+						const dynamicCount = dynamicFacts.size;
+						cmd.ui.notify(staticCount > 0 || dynamicCount > 0 ? `Supermemory: Profil geladen (${staticCount} statisch, ${dynamicCount} dynamisch)` : 'Supermemory: Kein Profildaten', 'notice');
 						return {ok: true, content: [{type: 'text', text: lines.join('\n')}]};
 					}
 
@@ -667,6 +676,7 @@ export default async function (cmd: ModApi): Promise<void> {
 					case 'forget': {
 						if (!input.memory_id) return {ok: false, error: 'memory_id is required for forget mode'};
 						const id = input.memory_id as string;
+						cmd.ui.notify(`Supermemory: Erinnerung gelöscht`, 'notice');
 						// v4 forget requires the memory's containerTag — try each tag in scope
 						let lastError: any = null;
 						for (const ct of readTags) {
@@ -812,6 +822,8 @@ export default async function (cmd: ModApi): Promise<void> {
 
 					if (contextLines.length > 1) {
 						parts.push(contextLines.join('\n'));
+						const totalItems = staticFacts.size + dynamicFacts.size + projMemories.length + userResults.length;
+						cmd.ui.notify(`Supermemory: Kontext geladen (${totalItems} Einträge)`);
 					}
 				} catch {
 					// silent
@@ -864,6 +876,7 @@ export default async function (cmd: ModApi): Promise<void> {
 						: transcript;
 
 				try {
+					cmd.ui.notify(`Supermemory: Konversation gespeichert`);
 					await smFetch(cfg.baseUrl, cfg.apiKey, '/v3/documents', 'POST', {
 						content,
 						containerTag: tags.canonical,
@@ -912,6 +925,7 @@ export default async function (cmd: ModApi): Promise<void> {
 
 			compactionInProgress = true;
 			lastCompactionTime = now;
+			cmd.ui.notify('Supermemory: Kontext fast voll — Erinnerungen sichern');
 
 			try {
 				// Fetch project memories and inject a compaction context message
@@ -945,6 +959,7 @@ export default async function (cmd: ModApi): Promise<void> {
 						display: false,
 					});
 					if (message) {
+						cmd.ui.notify(`Supermemory: ${projMemories.length} Erinnerungen gesichert`);
 						return {...state, messages: [...state.messages, message]};
 					}
 				}

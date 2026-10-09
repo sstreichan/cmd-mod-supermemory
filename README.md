@@ -20,7 +20,7 @@ The ModApi is documented as *experimental* — pin the version you ship against.
 Without an API key the mod still loads, notifies you once, and does nothing else:
 
 ```
-supermemory: no API key — set SUPERMEMORY_API_KEY or --mod-option api-key=sm_...
+Supermemory: Kein API-Key gesetzt — SUPERMEMORY_API_KEY oder --mod-option api-key=sm_... setzen
 ```
 
 ## Install
@@ -68,6 +68,23 @@ The agent calls the `supermemory` tool with `mode: "add"` and reports a memory i
 
 A returned memory means the mod loaded, reached the API and authenticated. `/memory help` lists the
 available commands; `cmdc mods list` only proves registration, not that the API key works.
+
+### Status messages
+
+The mod emits non-intrusive status notices as it works — in interactive sessions these appear inline
+in the terminal, in scripted runs they surface as `notice` events (e.g. with `--output-format json`):
+
+| When | Message |
+|---|---|
+| Mod loads (API key present) | `Supermemory aktiv (repo_…)` |
+| Mod loads (no API key) | `Supermemory: Kein API-Key gesetzt — …` (warning) |
+| Context injected on first turn | `Supermemory: Kontext geladen (N Einträge)` |
+| Memory stored (`add`) | `Supermemory: Gespeichert (project)` |
+| Memories searched (`search`) | `Supermemory: N Treffer gefunden` / `Supermemory: Keine Treffer` |
+| Profile fetched (`profile`) | `Supermemory: Profil geladen (N statisch, M dynamisch)` |
+| Conversation auto-captured | `Supermemory: Konversation gespeichert` |
+| Compaction triggered | `Supermemory: Kontext fast voll — Erinnerungen sichern` |
+| Compaction memories preserved | `Supermemory: N Erinnerungen gesichert` |
 
 ### Existing local install
 
